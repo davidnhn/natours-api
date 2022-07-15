@@ -1,6 +1,6 @@
 // const fs = require('fs');
 const express = require('express');
-const { stringify } = require('querystring');
+// const { stringify } = require('querystring');
 const morgan = require('morgan');
 
 const tourRouter = require('./routes/tourRoutes');
