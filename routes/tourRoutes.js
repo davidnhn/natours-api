@@ -1,11 +1,9 @@
 const express = require('express');
-
-const tourController = require('../controllers/tourController');
-
+const tourController = require('./../controllers/tourController');
 const router = express.Router();
 
 // app.use('/api/v1/tours', router);
-// router.param('id', tourController.checkID); //* param middleware
+router.param('id', tourController.checkID); // param middleware
 
 //cretae a checkBody middleware function
 //check if body contains the name and pricee property
@@ -15,7 +13,7 @@ const router = express.Router();
 router
   .route('/')
   .get(tourController.getAllTours)
-  .post(tourController.createTour);
+  .post(tourController.checkBody, tourController.createTour);
 router
   .route('/:id')
   .get(tourController.getTour)
