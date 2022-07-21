@@ -1,4 +1,5 @@
 // const fs = require('fs');
+const APIFeatures = require('../utils/apiFeatures');
 const Tour = require('../models/tourModels');
 
 // const tours = JSON.parse(
@@ -16,10 +17,80 @@ const Tour = require('../models/tourModels');
 //   next();
 // };
 
+exports.aliasTopTours = (req, res, next) => {
+  req.query.limit = '5';
+  req.query.sort = 'price,-ratingsAverage';
+  req.query.fields = 'name,price,ratingsAverage,summary,difficulty';
+  next();
+};
+
 exports.getAllTours = async (req, res) => {
   try {
-    const tours = await Tour.find();
+    //* BUILD THE QUERY
+    //* 1A) Filltering
+    /*
+    const queryObj = { ...req.query };
+    const excludedFields = ['page', 'sort', 'limit', 'fields'];
+    excludedFields.forEach((el) => delete queryObj[el]);
+    console.log(req.query, queryObj);
+    //* 1B) Advanced filtering
+    let queryStr = JSON.stringify(queryObj); // on recupere queryObj qui est une copie de req.query (object), on le stringify en json pour pouvoir le manipuker et remplacer des caracteres, puis on le parse en object pour le passer en parametre de la fonction qui recherche
+    queryStr = queryStr.replace(/\b(gte?|lte?)\b/g, (match) => `$${match}`);
+    console.log(JSON.parse(queryStr));
+    let query = Tour.find(JSON.parse(queryStr));
+    */
+
+    // const tours = await Tour.find()
+    //   .where('duration')
+    //   .equals(5)
+    //   .where('difficulty')
+    //   .equals('easy');
     // console.log(req.requestTime);
+
+    //* 2) Sorting
+    //sil y a propriete sort dans query
+    /*
+    if (req.query.sort) {
+      const sortBy = req.query.sort.split(',').join(' ');
+      console.log(sortBy);
+      query = query.sort(sortBy);
+    } else {
+      query = query.sort('-createdAt');
+    }
+    */
+    //* 3) Field limiting
+    /*
+    if (req.query.fields) {
+      const fields = req.query.fields.split(',').join(' ');
+      console.log(fields);
+
+      query = query.select(fields); // on veut recuperer que les propiete dans fields fiels='price ratings name'
+    } else {
+      query = query.select('-__v'); // le moins fait l'inverse , il exclue le __v
+    }
+    */
+    //* 4) Pagination
+    /*
+    const page = +req.query.page || 1;
+    const limit = +req.query.limit || 100;
+    const skip = (page - 1) * limit;
+    // page 1 : 1-10, page 2 : 11-20, page 3 : 21-30
+    query = query.skip(skip).limit(limit); // si on veut page 2 on skip 10 query
+
+    if (req.query.page) {
+      const numTours = await Tour.countDocuments(query);
+      if (skip >= numTours) throw new Error('This page does not exist');
+    }
+    */
+    //* EXECUTE THE QUERY
+    const features = new APIFeatures(Tour.find(), req.query)
+      .filter()
+      .sort()
+      .limitFields()
+      .paginate();
+    const tours = await features.query;
+
+    //* SEND RESPONSE
     res.status(200).json({
       status: 'success',
       // requestedAt: req.requestTime,
@@ -96,7 +167,7 @@ exports.createTour = async (req, res) => {
   } catch (err) {
     res.status(400).json({
       status: 'fail',
-      message: 'Invalid data sent!',
+      message: err,
     });
   }
   // console.log(req.body);
