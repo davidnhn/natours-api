@@ -1,7 +1,7 @@
 class APIFeatures {
   constructor(query, queryString) {
-    console.log(query);
-    console.log(queryString);
+    //query est Tour.find()
+    // queryString est req.query
     this.query = query;
     this.queryString = queryString;
   }
