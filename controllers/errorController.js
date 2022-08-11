@@ -1,8 +1,15 @@
+const mongoose = require('mongoose');
 const AppError = require('../utils/appError');
 
 const handleCastErrorDB = (err, req) => {
   console.log(err, 'heyyy');
   const message = `Invalid ${err.path}: ${err.value}.`;
+  return new AppError(message, 400);
+};
+
+const handleValidationErrorDB = (err) => {
+  const errors = Object.values(err.errors).map((el) => el.message);
+  const message = `Invalid input data. ${errors.joins('. ')}`;
   return new AppError(message, 400);
 };
 
@@ -52,6 +59,8 @@ module.exports = (err, req, res, next) => {
     if (err.message instanceof mongoose.Error.CastError)
       error = handleCastErrorDB(error);
     if (err.code === 11000) error = handleDuplicateFieldsDB(error);
+    if (error.name === 'ValidationError')
+      error = handleValidationErrorDB(error);
     sendErrorProd(error, res);
   }
 };

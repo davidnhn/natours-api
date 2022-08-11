@@ -205,12 +205,12 @@ exports.updateTour = catchAsync(async (req, res, next) => {
     {
       new: true,
       runValidators: true,
-    },
-    (err) => {
-      if (err) {
-        return next(new AppError('No tour found with that ID', 404));
-      }
     }
+    // (err) => {
+    //   if (err) {
+    //     return next(new AppError('No tour found with that ID', 404));
+    //   }
+    // }
   );
   // if (+req.params.id > tours.length) {
   //   return res.status(404).json({
