@@ -47,11 +47,31 @@ const userSchema = new Schema({
   passwordChangeAt: Date,
   passwordResetToken: String,
   passwordResetExpires: Date,
+  active: {
+    type: Boolean,
+    default: true,
+    select: false,
+  },
 });
+
+// Middleware qui chiffre le mot de passe avant de l'enregistrer
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
   this.password = await bcrypt.hash(this.password, 12);
   this.passwordConfirm = undefined;
+  next();
+});
+
+userSchema.pre('save', function (next) {
+  if (!this.isModified('password') || this.isNew) return next();
+
+  this.passwordChangeAt = Date.now() - 1000; // on s'assure que le token a bien ete crée apres que le mdp ai ete modifié
+  next();
+});
+
+userSchema.pre(/^find/, function (next) {
+  // this point to the current query
+  this.find({ active: { $ne: false } });
   next();
 });
 
