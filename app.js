@@ -1,5 +1,10 @@
 // const fs = require('fs');
 const express = require('express');
+const rateLimit = require('express-rate-limit');
+const helmet = require('helmet');
+const mongoSanitize = require('express-mongo-sanitize');
+const xss = require('xss-clean');
+const hpp = require('hpp');
 // const { stringify } = require('querystring');
 const morgan = require('morgan');
 const AppError = require('./utils/appError');
@@ -9,13 +14,45 @@ const userRouter = require('./routes/userRoutes');
 
 const app = express();
 
-//! 1) MIDDLEWARE
+//! 1) GLOBAL MIDDLEWARE
+app.use(helmet());
 
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
+//defni le nbr de requete par IP
+const limiter = rateLimit({
+  max: 100,
+  windowMs: 60 * 60 * 1000, // 1h en miliseconde,
+  message: 'Too many request from this IP, please try again in an hour',
+});
+
+app.use('/api', limiter);
+
 // middleware milieu entre le client et serveur , ajoute a la requete la data(que.body) que l'on veut envoyer
-app.use(express.json());
+app.use(express.json({ limit: '10kb' }));
+
+//Data saniization against NoSQL injection
+app.use(mongoSanitize());
+
+//Data sanitization against XSS
+app.use(xss());
+
+//Prevent parameter pollution
+app.use(
+  hpp({
+    whitelist: [
+      'duration',
+      'ratingsAverage',
+      'ratingsQuantity',
+      'maxGroupSize',
+      'difficulty',
+      'price',
+    ],
+  })
+);
+
+//serving static file
 app.use(express.static(`${__dirname}/public`));
 // ce middlware s'execute a chaque requete
 // app.use((req, res, next) => {
@@ -25,7 +62,6 @@ app.use(express.static(`${__dirname}/public`));
 
 app.use((req, res, next) => {
   req.requestTime = new Date().toISOString();
-  console.log(req.headers);
   next();
 });
 
